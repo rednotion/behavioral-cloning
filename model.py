@@ -86,8 +86,8 @@ model = Sequential()
 # Preprocess model
 model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(160, 320, 3)))
 model.add(Lambda(lambda x: (x / 255.0) - 0.5,
-                 input_shape=(n_channels, n_rows, n_cols),
-                 output_shape=(n_channels, n_rows, n_cols)))
+                 input_shape=(n_rows, n_cols, n_channels),
+                 output_shape=(n_rows, n_cols, n_channels)))
 
 # Architecture
 model.add(Conv2D(filters=24, kernel_size=5, strides=(2, 2), activation='relu'))
