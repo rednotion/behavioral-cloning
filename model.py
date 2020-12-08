@@ -1,3 +1,5 @@
+import sys, getopt
+
 import csv
 import cv2
 import numpy as np
@@ -12,17 +14,39 @@ from keras.models import Sequential
 from keras.layers import Cropping2D, Lambda, Flatten, Dense
 from keras.layers import Conv2D
 
+
+# Training parameters
+batch_size = 32
+learning_rate = 0.005
+n_epochs = 5
 model_name = 'test_model'
 
-data_path = '/opt/carnd_p3/data/driving_log.csv'
+# Parse options
+try:
+    opts, args = getopt.getopt(sys.argv[1:], "", ["epochs=", "name="])
+except getopt.GetoptError as err:
+    print(err)  # will print something like "option -a not recognized"
+    sys.exit(2)
 
-variants = ['classic']  # 'left', 'right', 'flipped'
+for o, a in opts:
+    if o == "--epochs":
+        n_epochs = int(a)
+        print("Setting n_epochs to " + str(a) + "...")
+    elif o == "--name":
+        model_name = a
+        print("Setting model_name to " + a + "...")
+
+
+folder_path = '/opt/carnd_p3/data/'
+data_path = 'driving_log.csv'
+
+variants = ['classic', 'flipped']  # 'left', 'right', 'flipped'
 UNDER_STEER_DELTA = 0.05
 OVER_STREER_DELTA = -0.05
 
 # Read file
 lines = []
-with open(data_path) as file:
+with open(folder_path + data_path) as file:
     reader = csv.reader(file)
     for l in reader:
         # append one version per variant
@@ -45,22 +69,29 @@ def generator(samples, batch_size=32):
             steering = []
 
             for bs in batch_samples:
-                if bs[4] == 'classic':
-                    img = cv2.imread(bs[0])
-                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                    images.append(img)
-                    steering.append(float(bs[3]))
-                elif bs[4] == 'left':
+                if bs[7] == 'classic':
+                    img = cv2.imread(folder_path + bs[0])
+                    try:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        images.append(img)
+                        steering.append(float(bs[3]))
+                    except:
+                        pass
+                elif bs[7] == 'left':
                     images.append(cv2.imread(bs[1]))
                     steering.append(float(bs[3]) + UNDER_STEER_DELTA)
-                elif bs[4] == 'right':
+                elif bs[7] == 'right':
                     images.append(cv2.imread(bs[2]))
                     steering.append(float(bs[3]) + OVER_STREER_DELTA)
-                elif bs[4] == 'flipped':
-                    img = cv2.imread(bs[0])
-                    img = np.fliplr(img)
-                    images.append(img)
-                    steering.append(-float(bs[3]))
+                elif bs[7] == 'flipped':
+                    img = cv2.imread(folder_path + bs[0])
+                    try:
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        img = np.fliplr(img)
+                        images.append(img)
+                        steering.append(-1 * float(bs[3]))
+                    except:
+                        pass
                 else:
                     pass
 
@@ -68,15 +99,10 @@ def generator(samples, batch_size=32):
             y_train = np.array(steering)
             yield sklearn.utils.shuffle(X_train, y_train)
 
-
-# Training parameters
-n_epochs = 5
-batch_size = 32
-learning_rate = 0.005
+            
+# Generators
 crop_top, crop_bottom = 40, 20
 n_channels, n_rows, n_cols = 3, (160 - crop_top - crop_bottom), 320  # trimmed image
-
-# Generators
 train_generator = generator(train_samples, batch_size)
 validation_generator = generator(validation_samples, batch_size)
 
@@ -121,4 +147,4 @@ plt.title('model mean squared error loss')
 plt.ylabel('mean squared error loss')
 plt.xlabel('epoch')
 plt.legend(['training set', 'validation set'], loc='upper right')
-plt.savefig('{}_loss_progress.png'.format(model_name))
+plt.savefig('loss_graphs/{}.png'.format(model_name))
