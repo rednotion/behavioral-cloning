@@ -13,7 +13,7 @@ from keras.layers import Conv2D
 
 model_name = 'test_model'
 
-data_path = '/opt/carnd_p3/data/'
+data_path = '/opt/carnd_p3/data/driving_log.csv'
 
 variants = ['classic']  # 'left', 'right', 'flipped'
 UNDER_STEER_DELTA = 0.05
@@ -21,7 +21,7 @@ OVER_STREER_DELTA = -0.05
 
 # Read file
 lines = []
-with open("../data/driving_log.csv") as file:
+with open(data_path) as file:
     reader = csv.reader(file)
     for l in reader:
         # append one version per variant
