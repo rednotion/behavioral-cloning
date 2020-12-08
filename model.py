@@ -1,18 +1,32 @@
+import csv
 import cv2
 import numpy as np
 import sklearn
 
+from random import shuffle
+from math import ceil
+
 from keras.models import Sequential
-from keras.layers import Cropping2D
+from keras.layers import Cropping2D, Lambda
 
 data_path = '/opt/carnd_p3/data/'
+
+variants = ['classic']  # 'left', 'right', 'flipped'
+UNDER_STEER_DELTA = 0.05
+OVER_STREER_DELTA = -0.05
 
 # Read file
 lines = []
 with open("../data/driving_log.csv") as file:
     reader = csv.reader(file)
     for l in reader:
-        lines.append(l)
+        # append one version per variant
+        for v in variants:
+            lines.append(l + [v])
+
+# Train test split
+train_samples, validation_samples = sklearn.model_selection.train_test_split(lines, test_size=0.33, random_state=42)
+
 
 # Get images (X) and measurements (y)
 def generator(samples, batch_size=32):
@@ -20,24 +34,34 @@ def generator(samples, batch_size=32):
     while 1:
         shuffle(samples)
         for offset in range(0, n_samples, batch_size):
-            batch_samples = samples[offset:offset+batch_size]
-            
+            batch_samples = samples[offset:offset + batch_size]
+
             images = []
             steering = []
-            
+
             for bs in batch_samples:
-                center_img = cv2.imread(bs[0])
-                # left_img = cv2.imread(bs[1])
-                # right_img = cv2.imread(bs[2])
-                images.append(cv2.imread(center_img))
-                # image_flipped = np.fliplr(image)ls 
-                steering.append(float(bs[3]))
-            
+                if bs[4] == 'classic':
+                    images.append(cv2.imread(bs[0]))
+                    steering.append(float(bs[3]))
+                elif bs[4] == 'left':
+                    images.append(cv2.imread(bs[1]))
+                    steering.append(float(bs[3]) + UNDER_STEER_DELTA)
+                elif bs[4] == 'right':
+                    images.append(cv2.imread(bs[2]))
+                    steering.append(float(bs[3]) + OVER_STREER_DELTA)
+                elif bs[4] == 'flipped':
+                    img = cv2.imread(bs[0])
+                    img = np.fliplr(img)
+                    images.append(img)
+                    steering.append(-float(bs[3]))
+                else:
+                    pass
+
             X_train = np.array(images)
             y_train = np.array(steering)
             yield sklearn.utils.shuffle(X_train, y_train)
 
-            
+
 # Training parameters
 n_epochs = 5
 batch_size = 32
@@ -53,8 +77,8 @@ validation_generator = generator(validation_samples, batch_size)
 model = Sequential()
 
 # Preprocess model
-model.add(Cropping2D(cropping=((crop_top,crop_bottom), (0,0)), input_shape=(160,320,3)))
-model.add(Lambda(lambda x: x/127.5 - 1.,
+model.add(Cropping2D(cropping=((crop_top, crop_bottom), (0, 0)), input_shape=(160, 320, 3)))
+model.add(Lambda(lambda x: x / 127.5 - 1.,
                  input_shape=(n_channels, n_rows, n_cols),
                  output_shape=(n_channels, n_rows, n_cols)))
 
@@ -63,11 +87,11 @@ model.add(Lambda(lambda x: x/127.5 - 1.,
 # Compile and train
 model.compile(loss='mse', optimizer='adam')
 model.fit_generator(train_generator,
-                    steps_per_epoch=ceil(len(train_samples)/batch_size),
+                    steps_per_epoch=ceil(len(train_samples) / batch_size),
                     validation_data=validation_generator,
-                    validation_steps=ceil(len(validation_samples)/batch_size),
+                    validation_steps=ceil(len(validation_samples) / batch_size),
                     epochs=n_epochs,
                     verbose=1)
 
 # Save
-model.save('model.h5')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+model.save('model.h5')
