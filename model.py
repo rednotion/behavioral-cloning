@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import sklearn
 
+from sklearn.model_selection import train_test_split
 from random import shuffle
 from math import ceil
 import matplotlib.pyplot as plt
@@ -29,7 +30,7 @@ with open(data_path) as file:
             lines.append(l + [v])
 
 # Train test split
-train_samples, validation_samples = sklearn.model_selection.train_test_split(lines, test_size=0.33, random_state=42)
+train_samples, validation_samples = train_test_split(lines, test_size=0.33, random_state=42)
 
 
 # Get images (X) and measurements (y)
