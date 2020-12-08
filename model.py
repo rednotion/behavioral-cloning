@@ -46,7 +46,9 @@ def generator(samples, batch_size=32):
 
             for bs in batch_samples:
                 if bs[4] == 'classic':
-                    images.append(cv2.imread(bs[0]))
+                    img = cv2.imread(bs[0])
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                    images.append(img)
                     steering.append(float(bs[3]))
                 elif bs[4] == 'left':
                     images.append(cv2.imread(bs[1]))
