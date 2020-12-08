@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 from keras.models import Sequential
 from keras.layers import Cropping2D, Lambda, Flatten, Dense
-from keras.layers import Convolution2D
+from keras.layers import Conv2D
 
 model_name = 'test_model'
 
@@ -87,6 +87,16 @@ model.add(Lambda(lambda x: (x / 255.0) - 0.5,
                  output_shape=(n_channels, n_rows, n_cols)))
 
 # Architecture
+model.add(Conv2D(filters=24, kernel_size=5, strides=(2, 2), activation='relu'))
+model.add(Conv2D(filters=36, kernel_size=5, strides=(2, 2), activation='relu'))
+model.add(Conv2D(filters=48, kernel_size=5, strides=(2, 2), activation='relu'))
+model.add(Conv2D(filters=64, kernel_size=3, strides=(2, 2), activation='relu'))
+model.add(Conv2D(filters=64, kernel_size=3, strides=(1, 1), activation='relu'))
+model.add(Flatten())  # 512
+model.add(Dense(units=128, activation='relu'))
+model.add(Dense(units=56, activation='relu'))
+model.add(Dense(units=10, activation='relu'))
+model.add(Dense(units=1))
 
 # Compile and train
 model.compile(loss='mse', optimizer='adam')
