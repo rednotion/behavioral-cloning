@@ -1,3 +1,4 @@
+import os
 import sys, getopt
 
 import csv
@@ -12,18 +13,27 @@ import matplotlib.pyplot as plt
 
 from keras.models import Sequential
 from keras.layers import Cropping2D, Lambda, Flatten, Dense
-from keras.layers import Conv2D
+from keras.layers import Conv2D, Dropout
 
 
 # Training parameters
 batch_size = 32
-learning_rate = 0.005
 n_epochs = 5
 model_name = 'test_model'
 
+# Options
+folder_path = '/opt/carnd_p3/data/'
+data_path = 'driving_log.csv'
+valid_images = ['IMG/' + x for x in  os.listdir(folder_path + 'IMG')]
+
+variants = ["classic", "flipped", "left", "right"]
+UNDER_STEER_DELTA = -0.01
+OVER_STEER_DELTA = 0.02
+
+
 # Parse options
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "", ["epochs=", "name="])
+    opts, args = getopt.getopt(sys.argv[1:], "", ["epochs=", "name=", "batchsize="])
 except getopt.GetoptError as err:
     print(err)  # will print something like "option -a not recognized"
     sys.exit(2)
@@ -31,37 +41,69 @@ except getopt.GetoptError as err:
 for o, a in opts:
     if o == "--epochs":
         n_epochs = int(a)
-        print("Setting n_epochs to " + str(a) + "...")
+        print("Setting n_epochs to {}...".format(a))
+    elif o == "--batchsize":
+        batch_size = int(a)
+        print("Setting batch_size to {}...".format(a))
     elif o == "--name":
         model_name = a
-        print("Setting model_name to " + a + "...")
+        print("Setting model_name to {}...".format(a))
 
-
-folder_path = '/opt/carnd_p3/data/'
-data_path = 'driving_log.csv'
-
-variants = ['classic', 'flipped']  # 'left', 'right', 'flipped'
-UNDER_STEER_DELTA = 0.05
-OVER_STREER_DELTA = -0.05
-
-# Read file
+        
+# Read provided data
 lines = []
+missing_right_images = 0
 with open(folder_path + data_path) as file:
     reader = csv.reader(file)
     for l in reader:
-        # append one version per variant
-        for v in variants:
-            lines.append(l + [v])
+        for v in variants:  # append one version per variant
+            lines.append(l + [v, folder_path])
+print("Data size = {}".format(len(lines)))
+
+# # Data from track 2
+# with open("../dom_train/driving_log.csv") as file:
+#     reader = csv.reader(file)
+#     for l in reader:
+#         lines.append(l + ['classic', '../dom_train/'])
+# print("Data size = {}".format(len(lines)))
+
+# Data from track 1
+track1_data = []
+with open("../liz_train/driving_log.csv") as file:
+    reader = csv.reader(file)
+    for l in reader:
+        for v in ['flipped', 'classic']:
+            track1_data.append(l + [v, '../liz_train/'])
+track1_length = len(track1_data)
+lines.extend(track1_data[0:int(0.9*track1_length)]) # use only the first 90% of data before i crashed
+print("Data size = {}".format(len(lines)))
+
+with open("../liz_train2/driving_log.csv") as file:
+    reader = csv.reader(file)
+    for l in reader:
+        for v in ['classic', 'flipped']:
+            lines.append(l + [v, '../liz_train2/'])
+print("Data size = {}".format(len(lines)))
+
+with open("../avoid_edges/driving_log.csv") as file:
+    reader = csv.reader(file)
+    for l in reader:
+        for v in ['classic', 'left_standard', 'right_standard']:
+            lines.append(l + [v, '../avoid_edges/'])
+print("Data size = {}".format(len(lines)))
+
 
 # Train test split
 train_samples, validation_samples = train_test_split(lines, test_size=0.33, random_state=42)
+print("n train samples = {}".format(len(train_samples)))
+print("n val samples = {}".format(len(validation_samples)))
 
-
+    
 # Get images (X) and measurements (y)
 def generator(samples, batch_size=32):
     n_samples = len(samples)
     while 1:
-        shuffle(samples)
+        # shuffle(samples)
         for offset in range(0, n_samples, batch_size):
             batch_samples = samples[offset:offset + batch_size]
 
@@ -69,31 +111,34 @@ def generator(samples, batch_size=32):
             steering = []
 
             for bs in batch_samples:
-                if bs[7] == 'classic':
-                    img = cv2.imread(folder_path + bs[0])
-                    try:
+                try:
+                    if bs[7] == 'classic':
+                        img = cv2.imread(bs[8] + bs[0])
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         images.append(img)
                         steering.append(float(bs[3]))
-                    except:
-                        pass
-                elif bs[7] == 'left':
-                    images.append(cv2.imread(bs[1]))
-                    steering.append(float(bs[3]) + UNDER_STEER_DELTA)
-                elif bs[7] == 'right':
-                    images.append(cv2.imread(bs[2]))
-                    steering.append(float(bs[3]) + OVER_STREER_DELTA)
-                elif bs[7] == 'flipped':
-                    img = cv2.imread(folder_path + bs[0])
-                    try:
+                    elif bs[7] in ['left', 'left_standard']:
+                        img = cv2.imread(bs[8] + bs[1].replace(' ', ''))
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        images.append(img)
+                        s = float(bs[3]) + UNDER_STEER_DELTA if bs[7] == 'left' else float(bs[3])
+                        steering.append(s)
+                    elif bs[7] in ['right', 'right_standard']:
+                        img = cv2.imread(bs[8] + bs[2].replace(' ', ''))
+                        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                        images.append(img)
+                        s = float(bs[3]) + OVER_STEER_DELTA if bs[7] == 'right' else float(bs[3])
+                        steering.append(s)
+                    elif bs[7] == 'flipped':
+                        img = cv2.imread(bs[8] + bs[0])
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         img = np.fliplr(img)
                         images.append(img)
                         steering.append(-1 * float(bs[3]))
-                    except:
-                        pass
-                else:
-                    pass
+                    else:
+                        continue
+                except:
+                    continue
 
             X_train = np.array(images)
             y_train = np.array(steering)
@@ -117,8 +162,11 @@ model.add(Lambda(lambda x: (x / 255.0) - 0.5,
 
 # Architecture
 model.add(Conv2D(filters=24, kernel_size=5, strides=(2, 2), activation='relu'))
+model.add(Dropout(0.5))
 model.add(Conv2D(filters=36, kernel_size=5, strides=(2, 2), activation='relu'))
+model.add(Dropout(0.5))
 model.add(Conv2D(filters=48, kernel_size=5, strides=(2, 2), activation='relu'))
+model.add(Dropout(0.5))
 model.add(Conv2D(filters=64, kernel_size=3, strides=(2, 2), activation='relu'))
 model.add(Conv2D(filters=64, kernel_size=3, strides=(1, 1), activation='relu'))
 model.add(Flatten())  # 512
@@ -137,7 +185,8 @@ training_hist = model.fit_generator(train_generator,
                                     verbose=1)
 
 # Save
-model.save('{}.h5'.format(model_name))
+model.save('models/{}.h5'.format(model_name))
+print("Saved to models/{}.h5!".format(model_name))
 
 # Save training history as graph
 fig, ax = plt.subplots()

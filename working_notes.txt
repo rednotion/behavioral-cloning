@@ -1,0 +1,9 @@
+udacity_Liz is the best performing by far. runs on the edges of the lane line but otherwise doesn't do anything bad
+
+(but actually the ones not using any of my data, just the 4x augmented training data provided is the best lol)
+
+udacity_dom_liz as problems with some curves + runs out of the course at the itnersection with the dirt road
+
+udacity_liz_avoid too.... i added some swerving data for a relatively straight portion of the track but it causes the problem at the dirt road :/
+
+none of them work well on the second track, can't get past the first hill
