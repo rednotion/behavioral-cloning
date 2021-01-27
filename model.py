@@ -67,30 +67,30 @@ print("Data size = {}".format(len(lines)))
 #         lines.append(l + ['classic', '../dom_train/'])
 # print("Data size = {}".format(len(lines)))
 
-# Data from track 1
-track1_data = []
-with open("../liz_train/driving_log.csv") as file:
-    reader = csv.reader(file)
-    for l in reader:
-        for v in ['flipped', 'classic']:
-            track1_data.append(l + [v, '../liz_train/'])
-track1_length = len(track1_data)
-lines.extend(track1_data[0:int(0.9*track1_length)]) # use only the first 90% of data before i crashed
-print("Data size = {}".format(len(lines)))
+# # Data from track 1
+# track1_data = []
+# with open("../liz_train/driving_log.csv") as file:
+#     reader = csv.reader(file)
+#     for l in reader:
+#         for v in ['flipped', 'classic']:
+#             track1_data.append(l + [v, '../liz_train/'])
+# track1_length = len(track1_data)
+# lines.extend(track1_data[0:int(0.9*track1_length)]) # use only the first 90% of data before i crashed
+# print("Data size = {}".format(len(lines)))
 
-with open("../liz_train2/driving_log.csv") as file:
-    reader = csv.reader(file)
-    for l in reader:
-        for v in ['classic', 'flipped']:
-            lines.append(l + [v, '../liz_train2/'])
-print("Data size = {}".format(len(lines)))
+# with open("../liz_train2/driving_log.csv") as file:
+#     reader = csv.reader(file)
+#     for l in reader:
+#         for v in ['classic', 'flipped']:
+#             lines.append(l + [v, '../liz_train2/'])
+# print("Data size = {}".format(len(lines)))
 
-with open("../avoid_edges/driving_log.csv") as file:
-    reader = csv.reader(file)
-    for l in reader:
-        for v in ['classic', 'left_standard', 'right_standard']:
-            lines.append(l + [v, '../avoid_edges/'])
-print("Data size = {}".format(len(lines)))
+# with open("../avoid_edges/driving_log.csv") as file:
+#     reader = csv.reader(file)
+#     for l in reader:
+#         for v in ['classic', 'left_standard', 'right_standard']:
+#             lines.append(l + [v, '../avoid_edges/'])
+# print("Data size = {}".format(len(lines)))
 
 
 # Train test split
@@ -197,3 +197,5 @@ plt.ylabel('mean squared error loss')
 plt.xlabel('epoch')
 plt.legend(['training set', 'validation set'], loc='upper right')
 plt.savefig('loss_graphs/{}.png'.format(model_name))
+print("Saved loss graph for {} as well".format(model_name))
+
