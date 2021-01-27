@@ -52,7 +52,7 @@ The final model has the following features:
 - **Optimization of parameters**: Using ADAM optimizer so that learning rate does not have to be manually selected
 - **Train/val/test split**: Model was trained and validated on different datasets to prevent overfitting. It was then tested on the simulator
 - **Appropriate training data**: Training data was chosen to keep the vehicle on the road, including center lane driving, and images from the left and right cameras. 
-- Model was trained for **50 epochs** with a **batch size of 32**
+- Model was trained for **30 epochs** with a **batch size of 32**
 
 ```python
 model = Sequential()
@@ -111,7 +111,7 @@ The overall strategy for deriving a model architecture was to create a deep conv
 
 Because of the number of parameters, I also added **dropout layers** to help with regularization and overfitting. I also used **relu** to introduce non-linearity. I also used an ADAM optimizer so that manually training the learning rate wasn't necessary. 
 
-For the number of epochs, I monitored the trend in the **training vs validation** loss, as evidenced in the graph earlier. I noticed that at 30 epochs the validation loss was still decreasing, but at 50 epochs it starts to plateau, so I stopped the training there.
+For the number of epochs, I monitored the trend in the **training vs validation** loss, as evidenced in the graph earlier. I noticed that at 10 epochs the validation loss was still decreasing, but at 30 epochs it starts to plateau, so I stopped the training there.
 
 #### 4. Attempts to improve driving behavior
  After training the model on the above data, I noticed it performed pretty well, and only struggled along big curves, where it would run onto the lane lines a bit (but not go off road).
